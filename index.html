@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Notepad</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.dark {
+      background-color: #1e1e1e;
+      color: #ddd;
+    }
+
+    header {
+      padding: 10px;
+      background: #4a90e2;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 5px;
+      padding: 10px;
+      background: #eaeaea;
+    }
+
+    .tabs.dark {
+      background: #2a2a2a;
+    }
+
+    .tab {
+      background: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: #4a90e2;
+      color: white;
+    }
+
+    .controls {
+      padding: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .editor {
+      padding: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 300px;
+      font-size: 16px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      resize: none;
+      background: inherit;
+      color: inherit;
+    }
+
+    button {
+      padding: 5px 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+    }
+
+    #timestamp {
+      margin-top: 5px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>Advanced Notepad</div>
+    <button onclick="toggleTheme()">Toggle Light/Dark</button>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="controls">
+    <button onclick="newNote()">New Note</button>
+    <button onclick="saveNote()">Save</button>
+    <button onclick="deleteNote()">Delete</button>
+    <button onclick="renameNote()">Rename</button>
+  </div>
+
+  <div class="editor">
+    <textarea id="editor" placeholder="Write your note here..."></textarea>
+    <div id="timestamp"></div>
+  </div>
+
+  <script>
+    let notes = JSON.parse(localStorage.getItem('notes') || '{}');
+    let currentTab = null;
+
+    function renderTabs() {
+      const tabsDiv = document.getElementById('tabs');
+      tabsDiv.innerHTML = '';
+      Object.keys(notes).forEach(title => {
+        const tab = document.createElement('div');
+        tab.className = 'tab' + (title === currentTab ? ' active' : '');
+        tab.textContent = title;
+        tab.onclick = () => switchTab(title);
+        tabsDiv.appendChild(tab);
+      });
+      updateTheme();
+    }
+
+    function switchTab(title) {
+      currentTab = title;
+      document.getElementById('editor').value = notes[title].content;
+      document.getElementById('timestamp').textContent = 'Last saved: ' + notes[title].timestamp;
+      renderTabs();
+    }
+
+    function newNote() {
+      const title = prompt('Enter note title:');
+      if (!title || notes[title]) return;
+      notes[title] = { content: '', timestamp: '' };
+      currentTab = title;
+      saveToLocal();
+      renderTabs();
+      switchTab(title);
+    }
+
+    function saveNote() {
+      if (!currentTab) return;
+      const content = document.getElementById('editor').value;
+      const timestamp = new Date().toLocaleString();
+      notes[currentTab] = { content, timestamp };
+      saveToLocal();
+      document.getElementById('timestamp').textContent = 'Last saved: ' + timestamp;
+    }
+
+    function deleteNote() {
+      if (!currentTab) return;
+      if (confirm('Delete this note?')) {
+        delete notes[currentTab];
+        currentTab = null;
+        document.getElementById('editor').value = '';
+        document.getElementById('timestamp').textContent = '';
+        saveToLocal();
+        renderTabs();
+      }
+    }
+
+    function renameNote() {
+      if (!currentTab) return;
+      const newTitle = prompt('Enter new title:', currentTab);
+      if (!newTitle || notes[newTitle]) return;
+      notes[newTitle] = notes[currentTab];
+      delete notes[currentTab];
+      currentTab = newTitle;
+      saveToLocal();
+      renderTabs();
+      switchTab(newTitle);
+    }
+
+    function saveToLocal() {
+      localStorage.setItem('notes', JSON.stringify(notes));
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      updateTheme();
+    }
+
+    function updateTheme() {
+      document.querySelector('.tabs').classList.toggle('dark', document.body.classList.contains('dark'));
+    }
+
+    window.onload = renderTabs;
+  </script>
+</body>
+</html>
